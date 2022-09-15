@@ -11,9 +11,6 @@
     "Plugin",
     "Config"
   ],
-  "engines": {
-    "node": ">=16"
-  },
   "repository": {
     "type": "git",
     "url": "https://github.com/pantheon-systems/eslint-config-pantheon"

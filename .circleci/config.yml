@@ -1,15 +1,7 @@
 version: 2.1
 
-executors:
-  pantheon_node:
-    parameters:
-      image_tag:
-        type: string
-    docker:
-      - image: quay.io/getpantheon/pantheon_node:<< parameters.image_tag >>
-        auth:
-          username: $QUAY_USER
-          password: $QUAY_PASSWD
+orbs:
+  node: circleci/node@5.0.2
 
 commands:
   run_danger_command:
@@ -18,25 +10,6 @@ commands:
       - run:
           name: Run Danger Checks
           command: yarn danger ci -d danger.config.js
-
-  install_dependencies_command:
-    description: 'Install Dependencies and Update Cache'
-    parameters:
-      image_tag:
-        type: string
-    steps:
-      - restore_cache:
-          name: 'Restore Yarn Package Cache'
-          keys:
-            - yarn-<< parameters.image_tag >>-packages-{{ checksum "yarn.lock" }}
-      - run:
-          name: Install Dependencies
-          command: yarn install --frozen-lockfile
-      - save_cache:
-          name: Save Yarn Package Cache
-          key: yarn-<< parameters.image_tag >>-packages-{{ checksum "yarn.lock" }}
-          paths:
-            - ~/.cache/yarn
 
   run_lint_command:
     description: 'Run ESLint'
@@ -58,12 +31,8 @@ commands:
 jobs:
   publish_job:
     description: 'Publish the Package'
-    parameters:
-      image_tag:
-        type: string
-    executor:
-      name: pantheon_node
-      image_tag: << parameters.image_tag >>
+    docker:
+      - image: 'cimg/node:lts'
     resource_class: small
     steps:
       - attach_workspace:
@@ -72,20 +41,17 @@ jobs:
 
   run_tests_job:
     description: 'Run Tests'
+    docker:
+      - image: 'cimg/node:lts'
     parameters:
-      image_tag:
-        type: string
       persist_workspace:
         type: boolean
         default: false
-    executor:
-      name: pantheon_node
-      image_tag: << parameters.image_tag >>
     resource_class: small
     steps:
       - checkout
-      - install_dependencies_command:
-          image_tag: << parameters.image_tag >>
+      - node/install-packages:
+          pkg-manager: yarn
       - run_lint_command
       - run_danger_command
       - when:
@@ -101,13 +67,11 @@ workflows:
   integrity_check:
     jobs:
       - run_tests_job:
-          name: Node 16
-          image_tag: v16
+          name: Node LTS
 
   publish:
     jobs:
       - run_tests_job:
-          image_tag: v16
           persist_workspace: true
           filters:
             tags:
@@ -116,7 +80,6 @@ workflows:
               ignore: /.*/
 
       - publish_job:
-          image_tag: v16
           requires:
             - run_tests_job
           filters:
