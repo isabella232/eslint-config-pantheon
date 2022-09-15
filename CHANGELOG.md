@@ -10,6 +10,8 @@ All notable changes to this project will be documented in this file. This projec
 
 ### Fixed/Updated
 
+- Update CircleCI config to use node orb with node LTS version
+
 ## 1.0.3
 
 **Note**: `1.0.3` is basically the same as `1.0.2`, which was published and deleted during testing.
